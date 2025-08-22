@@ -1,0 +1,15 @@
+EmailAttachmentInfo
+| join kind = inner (EmailEvents| project NetworkMessageId, Subject, SenderFromDomain, RecipientDomain) on NetworkMessageId
+| extend FileSize = case(
+    FileSize < 1024, strcat(tostring(FileSize), " Bytes"),
+    FileSize < 1024 * 1024, strcat(round(FileSize / 1024.0, 2), " KB"),
+    FileSize < 1024 * 1024 * 1024, strcat(round(FileSize / (1024.0 * 1024.0), 2), " MB"),
+    FileSize < 1024 * 1024 * 1024 * 1024, strcat(round(FileSize / (1024.0 * 1024.0 * 1024.0), 2), " GB"),
+    strcat(round(FileSize / (1024.0 * 1024.0 * 1024.0 * 1024.0), 2), " TB")
+)
+| join kind = leftouter (EmailUrlInfo | where UrlLocation == "Attachment"| project NetworkMessageId, UrlLocation, Url, UrlDomain) on NetworkMessageId
+| where NetworkMessageId == "" // NetworkMessageId is required if you want to see all results comment this line
+| summarize
+    URLsInAttachment = make_set(Url),
+    URLsDomains = make_set(UrlDomain)
+    by Timestamp, FileName, SHA256, FileSize, FileType, FileExtension, Sender=SenderFromAddress, SenderDomain=SenderFromDomain,Recipient=RecipientEmailAddress, RecipientDomain,Subject

@@ -1,0 +1,5 @@
+EmailUrlInfo
+| join kind = inner (EmailEvents| project NetworkMessageId, Subject, SenderFromDomain, RecipientDomain, SenderFromAddress, RecipientEmailAddress) on NetworkMessageId
+| join kind = leftouter (UrlClickEvents | where ActionType == "ClickAllowed" | project NetworkMessageId, IPAddress, ActionType) on NetworkMessageId
+| extend ActionType = iif(ActionType == "ClickAllowed", "Yes", "No")
+| distinct Timestamp, Url, IPAddress, UrlDomain, UrlLocation, Sender=SenderFromAddress, SenderDomain=SenderFromDomain,Recipient=RecipientEmailAddress, RecipientDomain, Subject, Clicked = ActionType
